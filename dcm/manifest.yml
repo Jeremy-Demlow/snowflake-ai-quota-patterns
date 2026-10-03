@@ -1,0 +1,90 @@
+manifest_version: 2
+type: DCM_PROJECT
+
+# ----------------------------------------------------------------------------
+# VALIDATION NOTE
+# This project was deployed end to end against a Snowflake lab account and then
+# torn down. `snow dcm plan` produced 15 entities: 11 roles, 3 tags, and one role
+# alter carrying the APPLYBUDGET grants. Two things that run caught and source
+# review did not:
+#
+#   1. account_identifier MUST be the ORG-QUALIFIED name (ORG-ACCOUNT_NAME), not
+#      the account locator. A locator always warns "Account mismatch". Get the
+#      right value with:
+#
+#        SELECT CURRENT_ORGANIZATION_NAME() || '-' || CURRENT_ACCOUNT_NAME();
+#
+#   2. Teardown must run EXECUTE DCM PROJECT ... PURGE before DROP DCM PROJECT.
+#      Documented behavior: a drop alone leaves the roles and tags in place as
+#      unmanaged objects. Validated: PURGE dropped all 11 roles and 3 tags. See
+#      quota/99_teardown.sql.
+# ----------------------------------------------------------------------------
+
+# DEV is the default so an unqualified command cannot reach PROD.
+default_target: DEV
+
+targets:
+
+  DEV:
+    account_identifier: '<ORG_NAME>-<DEV_ACCOUNT_NAME>'
+    project_name: '<DEV_CONTROL_DB>.<CONTROL_SCHEMA>.AI_RBAC_DEV'
+    project_owner: '<DEV_DCM_OWNER>'
+    templating_config: DEV
+
+  # Deploy to PROD only after DEV has run under enforcement.
+  PROD:
+    account_identifier: '<ORG_NAME>-<PROD_ACCOUNT_NAME>'
+    project_name: '<PROD_CONTROL_DB>.<CONTROL_SCHEMA>.AI_RBAC_PROD'
+    project_owner: '<PROD_DCM_OWNER>'
+    templating_config: PROD
+
+templating:
+  configurations:
+
+    DEV:
+      control_database: '<DEV_CONTROL_DB>'
+      control_schema: '<CONTROL_SCHEMA>'
+      role_prefix: '<DEV_ROLE_PREFIX>'
+      quota_creator_role: '<DEV_QUOTA_CREATOR>'
+      provisioning_writer_role: '<DEV_PROVISIONING_WRITER>'
+      cost_centers:
+        - '<APPROVED_COST_CENTER>'
+      # A value not listed here cannot be applied to a user, so a typo cannot
+      # silently create an ungoverned tier. 'topup' exists so the temporary
+      # headroom quota in quota/06_topup.sql has a tag value nobody carries by
+      # default, which is how that quota starts out empty instead of all-users.
+      spend_tiers:
+        - standard
+        - intensive
+        - service
+        - topup
+      # Discover the real names in YOUR account. The available set differs by
+      # region, bundle, and date, so do not copy names from anywhere else:
+      #   SHOW APPLICATION ROLES IN APPLICATION SNOWFLAKE;
+      # Look for the CORTEX-MODEL-ROLE-* entries.
+      standard_model_roles:
+        - '<DISCOVERED_APPROVED_SONNET_APPLICATION_ROLE>'
+      # Opus-class models are NOT pre-approved. At list rates a single long-context
+      # agentic call can cost tens to hundreds of credits, and a quota evaluates
+      # spend minutes after the fact. No quota prevents one expensive query;
+      # only model RBAC does. Grant only after a deliberate decision.
+      premium_model_roles: []
+      workload_model_roles: []
+
+    PROD:
+      control_database: '<PROD_CONTROL_DB>'
+      control_schema: '<CONTROL_SCHEMA>'
+      role_prefix: '<PROD_ROLE_PREFIX>'
+      quota_creator_role: '<PROD_QUOTA_CREATOR>'
+      provisioning_writer_role: '<PROD_PROVISIONING_WRITER>'
+      cost_centers:
+        - '<APPROVED_COST_CENTER>'
+      spend_tiers:
+        - standard
+        - intensive
+        - service
+        - topup
+      standard_model_roles:
+        - '<DISCOVERED_APPROVED_SONNET_APPLICATION_ROLE>'
+      premium_model_roles: []
+      workload_model_roles: []

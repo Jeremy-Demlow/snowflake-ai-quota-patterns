@@ -1,0 +1,67 @@
+# Per-user AI quota configuration. EXAMPLE. Copy to quotas.yml and replace
+# every number with the output of quota/00_size_limits.sql from YOUR account.
+#
+# This file holds everything DCM cannot own: quota objects, cycle limits,
+# monitored domains, notification thresholds, and tier membership. The quota
+# scripts are the executable form of this file; keep the two in step.
+#
+# SIZING RULE
+#   daily < weekly < monthly < daily x days_in_month
+#   daily  ~ p95 of a heavy user's single day, NOT monthly / 30
+#   weekly ~ 2-3 x daily
+#   monthly = the budget Finance signs up to
+#
+# WHY EACH CYCLE EXISTS
+#   daily   blast radius. Releases 00:00 UTC.
+#   weekly  sustained burn. Releases Monday 00:00 UTC.
+#   monthly the budget. Releases the 1st, 00:00 UTC.
+#   All three are evaluated independently. Raising monthly does NOT clear a
+#   daily or weekly block.
+#
+# NOT COVERED BY ANY QUOTA
+#   Cortex Search is not a per-user quota domain and cannot be governed this way.
+#   Warehouse compute cannot be mixed with AI domains; it needs its own quota
+#   and gets no block enforcement.
+#
+# The numbers below are round illustrative values, not a recommendation.
+
+example:
+  account_identifier: <ORG_NAME>-<ACCOUNT_NAME>
+  schema: <CONTROL_DB>.<CONTROL_SCHEMA>
+  admin_emails: <VERIFIED_ADMIN_EMAILS>
+  domains:
+    - AI FUNCTION
+    - CORTEX CODE
+    - CORTEX AGENT
+    - SNOWFLAKE INTELLIGENCE
+  thresholds:
+    - {percent: 75, type: PROJECTED, notify_user: true, cycle: MONTHLY}
+    - {percent: 90, type: ACTUAL,    notify_user: true, cycle: MONTHLY}
+    - {percent: 90, type: ACTUAL,    notify_user: true, cycle: DAILY}
+  tiers:
+    # Everyone without a tag. 50 x 30 = 1,500 > 250, so monthly binds for
+    # sustained use while daily still caps a single bad afternoon.
+    standard:
+      daily: 50
+      weekly: 120
+      monthly: 250
+    # Named power users.
+    intensive:
+      daily: 150
+      weekly: 600
+      monthly: 2000
+    # Pipelines. THE PIPELINE OWNER SETS THIS CEILING, not the quota admin.
+    service:
+      daily: 300
+      weekly: 1000
+      monthly: 3000
+    # Temporary headroom. Standard plus ~100 monthly credits, double the daily.
+    topup:
+      daily: 100
+      weekly: 250
+      monthly: 350
+  # Enable blocking only via quota/07_enable_blocking.sql, 10+ minutes after
+  # the quotas are created and scoped.
+  members: {}
+  # Anyone who must never be blocked by standard (quota operator, break-glass).
+  named_exclusions_from_standard: []

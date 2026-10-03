@@ -1,0 +1,16 @@
+# Article drafts stay local; they are not part of the repo
+article/
+
+# Local configuration and credentials
+quotas.yml
+*.p8
+*.pem
+.env
+config.toml
+connections.toml
+
+# Editor and OS files
+.DS_Store
+.vscode/
+.idea/
+.snowflake/
