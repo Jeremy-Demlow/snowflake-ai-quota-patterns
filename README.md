@@ -344,7 +344,7 @@ There is no run-all launcher. Run each file deliberately and read its output bef
 ## Sources
 
 - [Per-user quotas](https://docs.snowflake.com/en/user-guide/budgets/per-user-quotas)
-- [QUOTA_ACCESS_BLOCK_HISTORY](https://docs.snowflake.com/en/sql-reference/account-usage/quota_access_block_history)
+- [QUOTA_ACCESS_BLOCK_HISTORY](https://docs.snowflake.com/en/user-guide/budgets/per-user-quotas) (no reference page yet; described in the per-user quotas guide)
 - [DCM supported entities](https://docs.snowflake.com/en/user-guide/dcm-projects/dcm-projects-supported-entities)
 - [EXECUTE DCM PROJECT (PURGE)](https://docs.snowflake.com/en/sql-reference/sql/execute-dcm-project)
 - [AI privileges and model access](https://docs.snowflake.com/en/user-guide/snowflake-cortex/aisql-privileges-and-access)
