@@ -86,7 +86,7 @@ WHERE SCOPE['name']::STRING = 'snow.cost.quota'
 ORDER BY TIMESTAMP DESC;
 ```
 
-Two things it does **not** tell you. It has no user or role, so pair it with `QUERY_HISTORY`. And it is not evidence that a notification email was delivered: in validation it held no delivery events at all, including for block emails that did arrive.
+Two things it does **not** tell you. The configuration events we inspected did not identify the acting user or role, so pair it with `QUERY_HISTORY`. And it is not evidence that a notification email was delivered: in validation it held no delivery events at all, including for block emails that did arrive.
 
 ---
 
@@ -195,7 +195,7 @@ Then check the sizing rule still holds for every tier:
 daily  <  weekly  <  monthly  <  daily x days_in_month
 ```
 
-Raising daily above weekly makes the daily limit unreachable, because weekly always trips first, and silently removes your blast-radius control. Worst-case account exposure for one day is `users_in_tier x daily`, not the per-user number — recompute it whenever a limit changes.
+Raising daily to or above weekly means weekly trips first, so the daily limit stops doing its job and you lose your blast-radius control. Worst-case account exposure for one day is `users_in_tier x daily`, not the per-user number; recompute it whenever a limit changes.
 
 Record any change in your `quotas.yml` (copied from [../quotas.example.yml](../quotas.example.yml)), or the next release reverts it.
 

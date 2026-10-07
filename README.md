@@ -1,6 +1,6 @@
 # Snowflake AI Quota Patterns
 
-Per-user spend limits for Snowflake AI (Snowflake CoCo, formerly Cortex Code; Cortex Agents; Snowflake CoWork, formerly Snowflake Intelligence; and AI functions), built entirely from native Snowflake controls: tags, per-user quotas and, optionally, a DCM project for roles.
+Per-user spend limits for Snowflake AI (Snowflake CoCo, formerly Cortex Code; Cortex Agents; Snowflake CoWork, formerly Snowflake Intelligence; AI functions; and the AI Gateway, in Preview), built entirely from native Snowflake controls: tags, per-user quotas and, optionally, a DCM project for roles. The validation below exercised AI functions; the other domains are documented as enforceable but were not separately tested here.
 
 Two questions, answered by two different mechanisms:
 
@@ -287,8 +287,8 @@ Findings that change how you run it:
 3. **For a block that just happened, ask the quota: `GET_ACTIVE_BLOCKS_V2` and `GET_ENFORCEMENT_HISTORY`.** `GET_ACTIVE_BLOCKS_V2` showed our block about a minute after it landed. `ACCOUNT_USAGE.QUOTA_ACCESS_BLOCK_HISTORY` lags (ours were there within 15 minutes). It also has no `START_TIME` or `END_TIME`: use `ACTION_AT`, `CYCLE`, `ACTION`, `CREDITS`, `PER_USER_LIMIT`, `BLOCKED_UNTIL`.
 4. **DCM `account_identifier` must be `ORG-ACCOUNT_NAME`**, not the locator.
 5. **Tear a DCM project down with `PURGE`, then `DROP`.** A drop alone leaves its roles and tags behind as unmanaged objects. This is documented behaviour.
-6. **Blocked-user emails go only to verified addresses.** A brand-new user's email starts unverified, so for them expect the admin summary rather than the end-user email. Admin summaries come in two kinds, threshold breaches (actual or projected) and blocked users, and each block appeared in a summary within about 5 minutes. A dropped user's spend still counts for the rest of the cycle: a test user dropped four days earlier was blocked on WEEKLY by quotas created later that week, and appeared as `DROPPED_USER(<id>)`.
-7. **Every quota change is logged in the account's event table, which is not always `SNOWFLAKE.TELEMETRY.EVENTS`.** Events under `snow.cost.quota` record creation, scope, limits, domains, thresholds, admin emails and every blocking switch, with a readable message. They don't record who made the change, and they aren't evidence of email delivery. [audit.sql](audit.sql) QUERY 4 resolves the configured table and reads the log; QUERY 5 adds who ran each change from `QUERY_HISTORY`.
+6. **Blocked-user emails go only to verified addresses.** A brand-new user's email starts unverified, so for them expect the admin summary rather than the end-user email. Admin summaries come in two kinds, threshold breaches (actual or projected) and blocked users, and each block appeared in a summary about 2-5 minutes later. A dropped user's spend still counts for the rest of the cycle: a test user dropped four days earlier was blocked on WEEKLY by quotas created later that week, and appeared as `DROPPED_USER(<id>)`.
+7. **Every quota change is logged in the account's event table, which is not always `SNOWFLAKE.TELEMETRY.EVENTS`.** Events under `snow.cost.quota` record creation, scope, limits, domains, thresholds, admin emails and every blocking switch, with a readable message. They didn't identify who made the change in the events we inspected, and they aren't evidence of email delivery. [audit.sql](audit.sql) QUERY 4 resolves the configured table and reads the log; QUERY 5 adds who ran each change from `QUERY_HISTORY`.
 8. **A cycle-start action needs `USAGE` on the database and the schema for the `SNOWFLAKE` application, not just on the procedure.** Without those two grants, registering it failed with `INVALID_PROCEDURE_OR_MISSING_PERMISSIONS`; with them it registered.
 
 ---
@@ -331,7 +331,7 @@ There is no run-all launcher. Run each file deliberately and read its output bef
 
 ## Boundaries
 
-- **A quota can't stop one expensive query.** Enforcement is evaluated within minutes of spend, not at request time. Model RBAC is the control for cost per call; a quota is the control for cumulative spend.
+- **A quota isn't a per-request cost ceiling.** Enforcement is evaluated within minutes of spend, not before each request, so usage can overshoot the limit before the block lands (the docs' example: a 100-credit limit ending at 130). For AI functions, in-progress calls are terminated when the block takes effect. Model RBAC restricts which models users can call; a quota caps cumulative spend.
 - **A quota exclusion isn't extra allowance.** It removes the ceiling entirely.
 - **Named lists accumulate and have no TTL.** Passing an empty array clears the *whole* list, including your operator safety net.
 - **Accrued spend doesn't reset** when a user moves tier.
