@@ -9,6 +9,8 @@ Two questions, answered by two different mechanisms:
 
 It contains no scheduled tasks, polling warehouses or customer-written enforcement code. Snowflake enforces the limits.
 
+> **Read the write-up:** [Per-User AI Spend Limits in Snowflake That Don't Lock Out the People Who Run Them](https://medium.com/@jeremy.demlow_35029/per-user-ai-spend-limits-in-snowflake-that-dont-lock-out-the-people-who-run-them-4585f27088fc) walks through the design, the rollout order and the test results.
+
 > **Legal notice.** A community example, not an official or supported Snowflake product. Provided as is, without warranty. These scripts can block users, including administrators, from AI features; test in a non-production account first. See [LEGAL_NOTICE.md](LEGAL_NOTICE.md).
 
 ---
